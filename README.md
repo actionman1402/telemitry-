@@ -53,3 +53,9 @@ Electron Builder writes the DMG to `release/Telemitry Viewer-<version>-mac.dmg` 
 ## Wiring to real data
 
 Replace `data/mockTelemetry.json` with a loader that reads Motion IQ session exports or streams live samples from your gateway. The UI filters by event type and aggregates averages, so you can drop in your parser while keeping the same component contracts.
+
+## Importing telemetry files
+
+- Use **Import data** in the toolbar to load a Motion IQ JSON export at runtime.
+- Files should contain an array of samples shaped like `data/mockTelemetry.json` (timestamp, gps, imu, battery, event).
+- Imports reset the filter to **All events** and fall back to the bundled mock dataset if parsing fails.

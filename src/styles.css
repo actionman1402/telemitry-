@@ -161,6 +161,12 @@ tr:nth-child(even) {
   transition: all 0.2s ease;
 }
 
+.pill.secondary {
+  border-color: #22d3ee;
+  color: #22d3ee;
+  background: rgba(34, 211, 238, 0.08);
+}
+
 .pill:hover {
   border-color: #a78bfa;
 }
@@ -183,6 +189,15 @@ tr:nth-child(even) {
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 12px;
   margin-top: 12px;
+}
+
+.error-banner {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  color: #fecdd3;
 }
 
 .map {

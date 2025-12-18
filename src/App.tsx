@@ -17,12 +17,17 @@ export type TelemetrySample = {
 const telemetry = telemetryRaw as TelemetrySample[];
 
 function App() {
+  const [samples, setSamples] = useState<TelemetrySample[]>(telemetry);
   const [eventFilter, setEventFilter] = useState<string>('all');
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const filteredData = useMemo(() => {
-    if (eventFilter === 'all') return telemetry;
-    return telemetry.filter((sample) => sample.event === eventFilter);
-  }, [eventFilter]);
+    const source = eventFilter === 'all'
+      ? samples
+      : samples.filter((sample) => sample.event === eventFilter);
+
+    return source.length ? source : samples;
+  }, [eventFilter, samples]);
 
   const avgSpeed = useMemo(
     () =>
@@ -38,7 +43,27 @@ function App() {
     [filteredData]
   );
 
-  const latest = filteredData[filteredData.length - 1] ?? telemetry[0];
+  const latest = filteredData[filteredData.length - 1] ?? samples[0];
+
+  const handleImport = async (file: File) => {
+    try {
+      const content = await file.text();
+      const parsed = JSON.parse(content);
+
+      if (!Array.isArray(parsed)) {
+        throw new Error('File must be an array of telemetry samples');
+      }
+
+      setSamples(parsed as TelemetrySample[]);
+      setEventFilter('all');
+      setLoadError(null);
+    } catch (error) {
+      console.error('Failed to import telemetry', error);
+      setSamples(telemetry);
+      setEventFilter('all');
+      setLoadError('Unable to import file. Expected JSON array exported from Motion IQ telemetry. Reverted to bundled mock data.');
+    }
+  };
 
   return (
     <div className="app-shell">
@@ -52,8 +77,10 @@ function App() {
             to live feeds from your motion sensor gateway.
           </p>
         </div>
-        <Toolbar value={eventFilter} onChange={setEventFilter} />
+        <Toolbar value={eventFilter} onChange={setEventFilter} onImport={handleImport} />
       </header>
+
+      {loadError && <p className="error-banner">{loadError}</p>}
 
       <section className="metrics">
         <MetricCard

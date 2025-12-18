@@ -1,6 +1,9 @@
+import { ChangeEvent } from 'react';
+
 type Props = {
   value: string;
   onChange: (value: string) => void;
+  onImport: (file: File) => void;
 };
 
 const filters = [
@@ -9,7 +12,20 @@ const filters = [
   { label: 'Record', value: 'record' }
 ];
 
-function Toolbar({ value, onChange }: Props) {
+function Toolbar({ value, onChange, onImport }: Props) {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const [file] = Array.from(event.target.files ?? []);
+    if (file) {
+      onImport(file);
+      event.target.value = '';
+    }
+  };
+
+  const triggerFilePicker = () => {
+    const input = document.getElementById('telemitry-import-input') as HTMLInputElement | null;
+    input?.click();
+  };
+
   return (
     <div className="toolbar">
       <span className="muted">Event filter</span>
@@ -24,6 +40,16 @@ function Toolbar({ value, onChange }: Props) {
           </button>
         ))}
       </div>
+      <input
+        id="telemitry-import-input"
+        type="file"
+        accept="application/json,.json"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+      <button className="pill secondary" onClick={triggerFilePicker}>
+        Import data
+      </button>
     </div>
   );
 }
