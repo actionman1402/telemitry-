@@ -1,0 +1,53 @@
+{
+  "name": "telemitry-viewer",
+  "version": "0.1.0",
+  "description": "DMG-packaged desktop viewer for Motion IQ telemetry data with plotting and GPS views.",
+  "main": "dist-electron/main.js",
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\"",
+    "dev:renderer": "vite",
+    "dev:electron": "wait-on http://localhost:5173 && electron . --no-sandbox",
+    "build": "npm run build:renderer && npm run build:electron",
+    "build:renderer": "vite build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "package": "npm run build && electron-builder --mac --dir",
+    "dist": "npm run build && electron-builder --mac dmg"
+  },
+  "build": {
+    "appId": "com.motioniq.telemitry.viewer",
+    "productName": "Telemitry Viewer",
+    "directories": {
+      "output": "release"
+    },
+    "artifactName": "${productName}-${version}-${os}.${ext}",
+    "files": [
+      "dist/**",
+      "dist-electron/**",
+      "package.json"
+    ],
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.developer-tools"
+    }
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "recharts": "^2.10.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "@types/react": "^18.3.11",
+    "@types/react-dom": "^18.3.1",
+    "concurrently": "^9.1.2",
+    "electron": "^31.7.3",
+    "electron-builder": "^25.1.8",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "wait-on": "^7.2.0"
+  }
+}
