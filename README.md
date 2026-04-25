@@ -1,6 +1,6 @@
 # Telemitry Viewer
 
-A desktop viewer for Motion IQ telemetry that you can package as a macOS DMG. The app ships with mock data and components for GPS visualization, IMU plots, battery and speed charts, and tabular event review—similar to a BYB-style interface.
+A desktop viewer for Motion IQ telemetry that you can package as a macOS DMG. The renderer is now implemented in plain HTML/CSS/JavaScript (no React runtime required) and includes BYB-style cards, charts, GPS rows, event filtering, and file import support.
 
 ## Quick start
 
@@ -20,13 +20,13 @@ If you see a 403 when fetching packages, try:
 - `npm config set registry https://registry.npmjs.org/` (reset to the public registry)
 - Check any corporate proxy settings or VPN requirements
 
-3) **Run the app in development with hot reload**
+3) **Run the app in development**
 
 ```bash
 npm run dev
 ```
 
-- Vite serves the renderer at `http://localhost:5173`.
+- Vite serves the HTML renderer at `http://localhost:5173`.
 - Electron waits for the dev server via `wait-on` and opens the desktop window automatically.
 
 4) **Build production assets (renderer + Electron)**
@@ -45,17 +45,13 @@ Electron Builder writes the DMG to `release/Telemitry Viewer-<version>-mac.dmg` 
 
 ## Project structure
 
-- `src/` – React renderer with GPS trace, IMU and speed charts, and raw sample table.
+- `index.html` – Complete telemetry viewer UI (toolbar, metrics, charts, GPS panel, data table, import flow).
 - `electron/` – Electron main and preload scripts used for packaging.
-- `data/mockTelemetry.json` – Example Motion IQ telemetry feed used at runtime.
-- `vite.config.ts` – Vite configuration for the renderer build.
-
-## Wiring to real data
-
-Replace `data/mockTelemetry.json` with a loader that reads Motion IQ session exports or streams live samples from your gateway. The UI filters by event type and aggregates averages, so you can drop in your parser while keeping the same component contracts.
+- `data/mockTelemetry.json` – Example Motion IQ telemetry feed shape for your own exports.
+- `vite.config.ts` – Vite configuration used for renderer build + Electron integration.
 
 ## Importing telemetry files
 
-- Use **Import data** in the toolbar to load a Motion IQ JSON export at runtime.
-- Files should contain an array of samples shaped like `data/mockTelemetry.json` (timestamp, gps, imu, battery, event).
-- Imports reset the filter to **All events** and fall back to the bundled mock dataset if parsing fails.
+- Use **Import telemetry JSON** in the toolbar to load a Motion IQ JSON export at runtime.
+- Files should contain a non-empty sample array with fields: `timestamp`, `gps.lat`, `gps.lon`, `imu`, `battery`, `speed`, `event`.
+- Failed imports show an inline error and automatically fall back to bundled mock data.

@@ -4,9 +4,510 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Telemitry Viewer</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #070c18;
+        --panel: #121a2b;
+        --border: #21304d;
+        --text: #dce7ff;
+        --muted: #9cb0d6;
+        --accent: #57b5ff;
+        --ok: #79d499;
+        --warn: #ffcf6f;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
+          sans-serif;
+        background: radial-gradient(circle at top, #152644 0%, var(--bg) 55%);
+        color: var(--text);
+      }
+
+      .app {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 18px;
+        display: grid;
+        gap: 14px;
+      }
+
+      .panel {
+        background: color-mix(in srgb, var(--panel) 90%, black);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+      }
+
+      .toolbar {
+        padding: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .toolbar h1 {
+        margin: 0;
+        font-size: 1rem;
+        letter-spacing: 0.02em;
+      }
+
+      .toolbar .spacer {
+        flex: 1;
+      }
+
+      button,
+      select {
+        background: #0e1628;
+        border: 1px solid #2f4470;
+        color: var(--text);
+        border-radius: 9px;
+        padding: 8px 12px;
+      }
+
+      button.primary {
+        background: linear-gradient(130deg, #2c6bcf, #4b9dff);
+        border: none;
+        color: #f6fbff;
+        font-weight: 700;
+      }
+
+      .meta {
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .error {
+        margin: 0 12px 12px;
+        padding: 10px;
+        border: 1px solid #7b3f53;
+        border-radius: 8px;
+        background: #381f2b;
+        color: #ffcedb;
+      }
+
+      .metrics {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        padding: 12px;
+      }
+
+      .metric {
+        padding: 12px;
+        border-radius: 10px;
+        background: #0b1322;
+        border: 1px solid #263a63;
+      }
+
+      .metric .label {
+        color: var(--muted);
+        font-size: 0.79rem;
+      }
+
+      .metric .value {
+        margin-top: 4px;
+        font-size: 1.3rem;
+        font-weight: 700;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 14px;
+      }
+
+      .charts {
+        display: grid;
+        gap: 12px;
+        padding: 12px;
+      }
+
+      .chart-wrap {
+        border: 1px solid #2b426f;
+        border-radius: 10px;
+        padding: 10px;
+        background: #0a1322;
+      }
+
+      .chart-title {
+        font-size: 0.85rem;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+
+      canvas {
+        width: 100%;
+        height: 190px;
+        display: block;
+        border-radius: 6px;
+        background: #060d1a;
+      }
+
+      .sidebar {
+        display: grid;
+        gap: 12px;
+      }
+
+      .gps,
+      .table {
+        padding: 12px;
+      }
+
+      .gps-list {
+        max-height: 198px;
+        overflow: auto;
+        border: 1px solid #2b426f;
+        border-radius: 8px;
+      }
+
+      .gps-list div {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 10px;
+        border-bottom: 1px solid #1c2f50;
+        font-size: 0.82rem;
+      }
+
+      .gps-list div:last-child {
+        border-bottom: none;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.82rem;
+      }
+
+      th,
+      td {
+        text-align: left;
+        padding: 8px;
+        border-bottom: 1px solid #1d3154;
+      }
+
+      th {
+        color: var(--muted);
+        font-weight: 600;
+      }
+
+      tbody {
+        display: block;
+        max-height: 280px;
+        overflow: auto;
+      }
+
+      thead,
+      tbody tr {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+      }
+
+      @media (max-width: 1050px) {
+        .metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div class="app">
+      <section class="panel toolbar">
+        <h1>Telemitry Viewer (HTML)</h1>
+        <span class="meta" id="sourceLabel">Source: bundled mock data</span>
+        <div class="spacer"></div>
+        <label class="meta" for="eventFilter">Event:</label>
+        <select id="eventFilter"></select>
+        <button id="importBtn" class="primary" type="button">Import telemetry JSON</button>
+        <input id="importInput" type="file" accept="application/json" hidden />
+      </section>
+
+      <section class="panel metrics" id="metrics"></section>
+      <p class="error" id="error" hidden></p>
+
+      <div class="grid">
+        <section class="panel charts">
+          <div class="chart-wrap">
+            <div class="chart-title">Speed (km/h)</div>
+            <canvas id="speedChart" height="190"></canvas>
+          </div>
+          <div class="chart-wrap">
+            <div class="chart-title">Battery (%)</div>
+            <canvas id="batteryChart" height="190"></canvas>
+          </div>
+          <div class="chart-wrap">
+            <div class="chart-title">IMU magnitude (g)</div>
+            <canvas id="imuChart" height="190"></canvas>
+          </div>
+        </section>
+
+        <section class="sidebar">
+          <section class="panel gps">
+            <div class="chart-title">GPS trace samples</div>
+            <div class="gps-list" id="gpsList"></div>
+          </section>
+
+          <section class="panel table">
+            <div class="chart-title">Telemetry rows</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Event</th>
+                  <th>Speed</th>
+                  <th>Battery</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </section>
+        </section>
+      </div>
+    </div>
+
+    <script type="module">
+      const fallbackData = [
+        { timestamp: '2026-04-25T08:10:00Z', gps: { lat: 33.9221, lon: -117.3991 }, imu: { ax: 0.12, ay: 0.15, az: 0.98 }, battery: 97, speed: 8, event: 'idle' },
+        { timestamp: '2026-04-25T08:10:03Z', gps: { lat: 33.9226, lon: -117.3986 }, imu: { ax: 0.23, ay: 0.38, az: 0.95 }, battery: 97, speed: 15, event: 'launch' },
+        { timestamp: '2026-04-25T08:10:06Z', gps: { lat: 33.9233, lon: -117.3978 }, imu: { ax: 0.31, ay: 0.55, az: 0.92 }, battery: 96, speed: 28, event: 'accel' },
+        { timestamp: '2026-04-25T08:10:09Z', gps: { lat: 33.9242, lon: -117.3969 }, imu: { ax: 0.47, ay: 0.77, az: 0.87 }, battery: 95, speed: 37, event: 'accel' },
+        { timestamp: '2026-04-25T08:10:12Z', gps: { lat: 33.9254, lon: -117.3957 }, imu: { ax: 0.65, ay: 1.02, az: 0.84 }, battery: 95, speed: 45, event: 'corner' },
+        { timestamp: '2026-04-25T08:10:15Z', gps: { lat: 33.9262, lon: -117.3948 }, imu: { ax: 0.38, ay: 0.93, az: 0.9 }, battery: 94, speed: 40, event: 'corner' },
+        { timestamp: '2026-04-25T08:10:18Z', gps: { lat: 33.9271, lon: -117.3938 }, imu: { ax: 0.18, ay: 0.6, az: 0.95 }, battery: 94, speed: 30, event: 'decel' },
+        { timestamp: '2026-04-25T08:10:22Z', gps: { lat: 33.9278, lon: -117.3931 }, imu: { ax: 0.08, ay: 0.22, az: 0.99 }, battery: 93, speed: 12, event: 'idle' }
+      ];
+
+      const state = {
+        source: 'bundled mock data',
+        allRows: fallbackData,
+        filteredRows: fallbackData,
+        filter: 'all'
+      };
+
+      const elements = {
+        sourceLabel: document.getElementById('sourceLabel'),
+        eventFilter: document.getElementById('eventFilter'),
+        importBtn: document.getElementById('importBtn'),
+        importInput: document.getElementById('importInput'),
+        error: document.getElementById('error'),
+        metrics: document.getElementById('metrics'),
+        gpsList: document.getElementById('gpsList'),
+        tableBody: document.getElementById('tableBody'),
+        speedChart: document.getElementById('speedChart'),
+        batteryChart: document.getElementById('batteryChart'),
+        imuChart: document.getElementById('imuChart')
+      };
+
+      const fmt = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+      function validateRows(rows) {
+        if (!Array.isArray(rows) || rows.length === 0) return false;
+        return rows.every((r) => r?.timestamp && typeof r.speed === 'number' && typeof r.battery === 'number' && r.gps?.lat != null && r.gps?.lon != null && r.imu);
+      }
+
+      function magnitude(imu) {
+        return Math.sqrt(imu.ax ** 2 + imu.ay ** 2 + imu.az ** 2);
+      }
+
+      function average(values) {
+        return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;
+      }
+
+      function buildFilterOptions(rows) {
+        const events = Array.from(new Set(rows.map((row) => row.event || 'unknown')));
+        elements.eventFilter.innerHTML = '';
+        const allOpt = document.createElement('option');
+        allOpt.value = 'all';
+        allOpt.textContent = 'All events';
+        elements.eventFilter.append(allOpt);
+        for (const ev of events) {
+          const opt = document.createElement('option');
+          opt.value = ev;
+          opt.textContent = ev;
+          elements.eventFilter.append(opt);
+        }
+        elements.eventFilter.value = state.filter;
+      }
+
+      function drawLine(canvas, rows, accessor, color, minClamp = null, maxClamp = null) {
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        const pad = 26;
+        ctx.clearRect(0, 0, w, h);
+        ctx.strokeStyle = '#1a3158';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+          const y = pad + ((h - pad * 2) * i) / 3;
+          ctx.beginPath();
+          ctx.moveTo(pad, y);
+          ctx.lineTo(w - pad, y);
+          ctx.stroke();
+        }
+
+        const vals = rows.map(accessor);
+        const min = minClamp ?? Math.min(...vals, 0);
+        const max = maxClamp ?? Math.max(...vals, 1);
+        const range = Math.max(max - min, 0.0001);
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        vals.forEach((value, idx) => {
+          const x = pad + ((w - pad * 2) * idx) / Math.max(vals.length - 1, 1);
+          const y = h - pad - ((value - min) / range) * (h - pad * 2);
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        ctx.fillStyle = '#98afd8';
+        ctx.font = '11px ui-sans-serif';
+        ctx.fillText(max.toFixed(1), 4, pad + 3);
+        ctx.fillText(min.toFixed(1), 4, h - pad + 3);
+      }
+
+      function renderMetrics(rows) {
+        const speeds = rows.map((row) => row.speed);
+        const batteries = rows.map((row) => row.battery);
+        const imus = rows.map((row) => magnitude(row.imu));
+        const distance = rows.reduce((acc, row, index) => {
+          if (index === 0) return 0;
+          const prev = rows[index - 1];
+          const dLat = (row.gps.lat - prev.gps.lat) * 111000;
+          const dLon = (row.gps.lon - prev.gps.lon) * 111000;
+          return acc + Math.sqrt(dLat ** 2 + dLon ** 2);
+        }, 0);
+
+        const cards = [
+          ['Samples', rows.length],
+          ['Avg speed', `${average(speeds).toFixed(1)} km/h`],
+          ['Peak speed', `${Math.max(...speeds, 0).toFixed(1)} km/h`],
+          ['Avg IMU |g|', average(imus).toFixed(3)],
+          ['Est. distance', `${distance.toFixed(0)} m`],
+          ['Battery drop', `${(Math.max(...batteries) - Math.min(...batteries)).toFixed(1)}%`],
+          ['Start battery', `${rows[0]?.battery ?? 0}%`],
+          ['End battery', `${rows.at(-1)?.battery ?? 0}%`],
+          ['Most common event', mostCommon(rows.map((r) => r.event || 'unknown'))],
+          ['Time span', spanLabel(rows)]
+        ];
+
+        elements.metrics.innerHTML = cards
+          .map(
+            ([label, value]) =>
+              `<article class="metric"><div class="label">${label}</div><div class="value">${value}</div></article>`
+          )
+          .join('');
+      }
+
+      function mostCommon(values) {
+        const counts = values.reduce((acc, value) => {
+          acc[value] = (acc[value] ?? 0) + 1;
+          return acc;
+        }, {});
+        return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'n/a';
+      }
+
+      function spanLabel(rows) {
+        if (!rows.length) return 'n/a';
+        const first = new Date(rows[0].timestamp).getTime();
+        const last = new Date(rows.at(-1).timestamp).getTime();
+        const sec = Math.max((last - first) / 1000, 0);
+        return `${sec.toFixed(0)} s`;
+      }
+
+      function renderGps(rows) {
+        elements.gpsList.innerHTML = rows
+          .slice(0, 100)
+          .map(
+            (row) =>
+              `<div><span>${fmt.format(new Date(row.timestamp))}</span><span>${row.gps.lat.toFixed(5)}, ${row.gps.lon.toFixed(5)}</span></div>`
+          )
+          .join('');
+      }
+
+      function renderTable(rows) {
+        elements.tableBody.innerHTML = rows
+          .slice(0, 200)
+          .map(
+            (row) =>
+              `<tr><td>${fmt.format(new Date(row.timestamp))}</td><td>${row.event ?? 'unknown'}</td><td>${row.speed.toFixed(
+                1
+              )}</td><td>${row.battery.toFixed(1)}</td></tr>`
+          )
+          .join('');
+      }
+
+      function render() {
+        const rows = state.filter === 'all' ? state.allRows : state.allRows.filter((row) => row.event === state.filter);
+        state.filteredRows = rows;
+        elements.sourceLabel.textContent = `Source: ${state.source}`;
+
+        if (!rows.length) {
+          elements.error.hidden = false;
+          elements.error.textContent = 'No rows available for the selected event.';
+          return;
+        }
+
+        elements.error.hidden = true;
+        renderMetrics(rows);
+        renderGps(rows);
+        renderTable(rows);
+
+        drawLine(elements.speedChart, rows, (r) => r.speed, '#4cc0ff', 0, 60);
+        drawLine(elements.batteryChart, rows, (r) => r.battery, '#f7c66c', 0, 100);
+        drawLine(elements.imuChart, rows, (r) => magnitude(r.imu), '#8ce08c', 0, 2);
+      }
+
+      function replaceRows(rows, sourceLabel) {
+        state.allRows = rows;
+        state.source = sourceLabel;
+        state.filter = 'all';
+        buildFilterOptions(rows);
+        render();
+      }
+
+      elements.eventFilter.addEventListener('change', (event) => {
+        state.filter = event.target.value;
+        render();
+      });
+
+      elements.importBtn.addEventListener('click', () => elements.importInput.click());
+      elements.importInput.addEventListener('change', async (event) => {
+        const [file] = event.target.files;
+        if (!file) return;
+
+        try {
+          const text = await file.text();
+          const parsed = JSON.parse(text);
+          if (!validateRows(parsed)) {
+            throw new Error('JSON must be a non-empty sample array with timestamp/gps/imu/battery/speed.');
+          }
+          elements.error.hidden = true;
+          replaceRows(parsed, `imported: ${file.name}`);
+        } catch (err) {
+          elements.error.hidden = false;
+          elements.error.textContent = `Import failed (${err.message}). Reverted to bundled mock data.`;
+          replaceRows(fallbackData, 'bundled mock data');
+        } finally {
+          event.target.value = '';
+        }
+      });
+
+      buildFilterOptions(state.allRows);
+      render();
+    </script>
   </body>
 </html>
