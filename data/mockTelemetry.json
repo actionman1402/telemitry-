@@ -1,0 +1,30 @@
+[
+  {
+    "timestamp": "2025-02-01T10:00:00Z",
+    "gps": { "lat": 37.7749, "lng": -122.4194, "speedKph": 42 },
+    "imu": { "ax": 0.12, "ay": -0.05, "az": 0.98 },
+    "battery": 92,
+    "event": "start"
+  },
+  {
+    "timestamp": "2025-02-01T10:00:05Z",
+    "gps": { "lat": 37.7755, "lng": -122.4202, "speedKph": 48 },
+    "imu": { "ax": 0.14, "ay": -0.01, "az": 1.04 },
+    "battery": 90,
+    "event": "record"
+  },
+  {
+    "timestamp": "2025-02-01T10:00:10Z",
+    "gps": { "lat": 37.7762, "lng": -122.4210, "speedKph": 51 },
+    "imu": { "ax": 0.18, "ay": 0.04, "az": 0.99 },
+    "battery": 89,
+    "event": "record"
+  },
+  {
+    "timestamp": "2025-02-01T10:00:15Z",
+    "gps": { "lat": 37.7769, "lng": -122.4218, "speedKph": 55 },
+    "imu": { "ax": 0.16, "ay": 0.02, "az": 1.03 },
+    "battery": 88,
+    "event": "record"
+  }
+]
