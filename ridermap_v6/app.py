@@ -115,7 +115,7 @@ def resample_uniform(ts,pts,q,frame_ids,fps,anchor_indices):
 class App(tk.Tk):
     def __init__(self):
         super().__init__();self.title(APP_NAME);self.geometry('1380x860');self.minsize(1120,700);self.configure(bg=BG)
-        self.option_add('*Font','Segoe UI 10');cv2.setUseOptimized(True)
+        self.option_add('*Font','{Segoe UI} 10');cv2.setUseOptimized(True)
         try:cv2.setNumThreads(max(1,min(8,(os.cpu_count() or 4)-1)))
         except Exception:pass
         self.video='';self.running=False;self.cancel_flag=False;self.preview_photo=None
