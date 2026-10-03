@@ -1,0 +1,57 @@
+name: Build Rider Mapping Pro V6 EXE
+
+on:
+  push:
+    branches: [ ridermap-v6-exe ]
+    paths:
+      - 'ridermap_v6/**'
+      - '.github/workflows/build-ridermap-v6.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install runtime and build dependencies
+        shell: pwsh
+        working-directory: ridermap_v6
+        run: |
+          python -m pip install --upgrade pip wheel setuptools
+          pip install numpy==2.2.6 opencv-python-headless==4.12.0.88 Pillow==11.3.0 av==14.4.0 onnxruntime-directml==1.22.0 pyinstaller==6.16.0
+          pip install ultralytics==8.3.203 onnx==1.18.0 onnxslim==0.1.65
+
+      - name: Export bundled pose model
+        shell: pwsh
+        working-directory: ridermap_v6
+        run: |
+          python -c "from ultralytics import YOLO; m=YOLO('yolo11n-pose.pt'); print(m.export(format='onnx', imgsz=384, opset=17, simplify=True, dynamic=False))"
+          New-Item -ItemType Directory -Force models | Out-Null
+          Copy-Item yolo11n-pose.onnx models/yolo11n-pose.onnx -Force
+          Get-Item models/yolo11n-pose.onnx | Format-List FullName,Length
+
+      - name: Build single EXE
+        shell: pwsh
+        working-directory: ridermap_v6
+        run: |
+          python -m PyInstaller --noconfirm --clean --onefile --windowed --name RiderMappingProV6 --paths . --collect-all av --collect-all onnxruntime --collect-all cv2 --collect-all PIL --exclude-module ultralytics --exclude-module torch --exclude-module torchvision --exclude-module matplotlib --exclude-module scipy --add-data "models/yolo11n-pose.onnx;models" app.py
+          Get-Item dist/RiderMappingProV6.exe | Format-List FullName,Length
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: RiderMappingProV6-Windows-x64
+          path: ridermap_v6/dist/RiderMappingProV6.exe
+          if-no-files-found: error
+          retention-days: 7
