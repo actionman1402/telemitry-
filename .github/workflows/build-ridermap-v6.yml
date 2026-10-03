@@ -3,9 +3,8 @@ name: Build Rider Mapping Pro V6 EXE
 on:
   push:
     branches: [ ridermap-v6-exe ]
-    paths:
-      - 'ridermap_v6/**'
-      - '.github/workflows/build-ridermap-v6.yml'
+  pull_request:
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -39,7 +38,6 @@ jobs:
           python -c "from ultralytics import YOLO; m=YOLO('yolo11n-pose.pt'); print(m.export(format='onnx', imgsz=384, opset=17, simplify=True, dynamic=False))"
           New-Item -ItemType Directory -Force models | Out-Null
           Copy-Item yolo11n-pose.onnx models/yolo11n-pose.onnx -Force
-          Get-Item models/yolo11n-pose.onnx | Format-List FullName,Length
 
       - name: Build single EXE
         shell: pwsh
