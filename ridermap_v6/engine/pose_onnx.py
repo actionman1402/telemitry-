@@ -15,15 +15,53 @@ class PoseEstimator:
     def __init__(self, model_path: str, input_size: int=384):
         import onnxruntime as ort
         available=ort.get_available_providers()
-        pref=[p for p in ('CUDAExecutionProvider','DmlExecutionProvider','CPUExecutionProvider') if p in available]
-        opts=ort.SessionOptions(); opts.graph_optimization_level=ort.GraphOptimizationLevel.ORT_ENABLE_ALL
-        opts.intra_op_num_threads=0; opts.inter_op_num_threads=1
-        self.session=ort.InferenceSession(model_path,sess_options=opts,providers=pref)
+        self.model_path=model_path
+        self.session=None
+        self.provider='CPUExecutionProvider'
+        self.provider_error=''
+
+        # Provider setup is deliberately defensive. Some Windows/VM/Parallels
+        # systems advertise DirectML but fail while ONNX Runtime builds the
+        # DirectML graph (0x80004005). That must never stop the app opening.
+        attempts=[]
+        if 'CUDAExecutionProvider' in available:
+            attempts.append(('CUDAExecutionProvider',['CUDAExecutionProvider','CPUExecutionProvider']))
+        if 'DmlExecutionProvider' in available:
+            attempts.append(('DmlExecutionProvider',['DmlExecutionProvider','CPUExecutionProvider']))
+        attempts.append(('CPUExecutionProvider',['CPUExecutionProvider']))
+
+        errors=[]
+        for label,providers in attempts:
+            try:
+                opts=ort.SessionOptions()
+                opts.graph_optimization_level=ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+                opts.intra_op_num_threads=0
+                opts.inter_op_num_threads=1
+                if label=='DmlExecutionProvider':
+                    # Required/recommended for DirectML stability.
+                    opts.enable_mem_pattern=False
+                    opts.execution_mode=ort.ExecutionMode.ORT_SEQUENTIAL
+                self.session=ort.InferenceSession(
+                    model_path,
+                    sess_options=opts,
+                    providers=providers
+                )
+                actual=self.session.get_providers()
+                self.provider=actual[0] if actual else label
+                break
+            except Exception as e:
+                errors.append(f'{label}: {e}')
+                self.session=None
+
+        if self.session is None:
+            raise RuntimeError('Could not initialise any ONNX Runtime provider. ' + ' | '.join(errors))
+
+        if errors:
+            self.provider_error=' | '.join(errors)
+
         self.input_name=self.session.get_inputs()[0].name
         shape=self.session.get_inputs()[0].shape
         self.size=int(shape[-1]) if isinstance(shape[-1],int) else int(input_size)
-        self.provider=self.session.get_providers()[0] if self.session.get_providers() else 'CPU'
-        self.model_path=model_path
 
     @staticmethod
     def _letterbox(img,size):
